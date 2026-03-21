@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StudyHive</title>
+<meta name="theme-color" content="#5b5ef4"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="/manifest.json"/>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f8fa;--bg3:#eef0f5;--card:#fff;--border:#e2e5ec;
+  --text:#111;--text2:#5a5f6e;--text3:#9097a8;
+  --accent:#5b5ef4;--accent2:#7c7ff7;--accent-bg:#eeeeff;
+  --green:#16a34a;--green-bg:#dcfce7;
+  --amber:#d97706;--amber-bg:#fef3c7;
+  --red:#dc2626;--red-bg:#fee2e2;
+  --r:12px;--rs:8px;
+}
+[data-theme=dark]{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2433;--card:#161b27;--border:#2a3044;
+  --text:#f0f2f8;--text2:#9097a8;--text3:#5a5f6e;
+  --accent:#7c7ff7;--accent2:#9a9dff;--accent-bg:#1e1f45;
+  --green:#4ade80;--green-bg:#052e16;--amber:#fbbf24;--amber-bg:#1c1300;
+  --red:#f87171;--red-bg:#2a0808;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+a{color:inherit;text-decoration:none}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInRight{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes beeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes xpPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+@keyframes ripple{0%{transform:scale(0);opacity:.6}100%{transform:scale(2.5);opacity:0}}
+@keyframes dotBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+.ani-fade{animation:fadeIn .35s ease both}
+.ani-left{animation:fadeInLeft .35s ease both}
+.ani-right{animation:fadeInRight .35s ease both}
+.ani-pop{animation:popIn .3s cubic-bezier(.34,1.56,.64,1) both}
+.ani-slide{animation:slideDown .3s ease both}
+
+/* stagger children */
+.stagger>*:nth-child(1){animation-delay:.05s}
+.stagger>*:nth-child(2){animation-delay:.1s}
+.stagger>*:nth-child(3){animation-delay:.15s}
+.stagger>*:nth-child(4){animation-delay:.2s}
+.stagger>*:nth-child(5){animation-delay:.25s}
+
+/* hover lift */
+.lift{transition:transform .2s,box-shadow .2s}
+.lift:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(91,94,244,.13)}
+
+/* screens */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+#auth-screen{align-items:center;justify-content:center;background:var(--bg)}
+#app-screen{flex-direction:row;height:100vh;overflow:hidden}
+
+/* auth */
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px;width:380px;max-width:92vw;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+.auth-logo{text-align:center;font-size:42px;margin-bottom:8px;animation:beeFloat 3s ease-in-out infinite}
+.auth-title{text-align:center;font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.auth-sub{text-align:center;font-size:13px;color:var(--text3);margin-bottom:24px}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.auth-tab{flex:1;padding:9px;font-size:13px;font-weight:500;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;transition:.2s;cursor:pointer}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.err{background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:10px 12px;font-size:12px;margin-bottom:12px;display:none;animation:slideDown .25s ease}
+.info{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);border-radius:var(--rs);padding:10px 12px;font-size:12px;margin-bottom:12px;display:none;animation:slideDown .25s ease}
+
+/* form */
+.fr{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.fi,.fs,.ft{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
+.ft{resize:vertical;min-height:70px}
+
+/* buttons */
+.btn{padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .18s;position:relative;overflow:hidden}
+.btn:hover{background:var(--bg3);transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-p:hover{background:var(--accent2);box-shadow:0 4px 14px rgba(91,94,244,.35)}
+.btn-g{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-g:hover{box-shadow:0 4px 14px rgba(22,163,74,.35)}
+.btn-r{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-r:hover{box-shadow:0 4px 14px rgba(220,38,38,.35)}
+.btn-a{background:var(--amber);color:#fff;border-color:var(--amber)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-full{width:100%;padding:11px}
+
+/* ripple effect on buttons */
+.btn::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.35);width:100px;height:100px;margin-top:-50px;margin-left:-50px;top:50%;left:50%;transform:scale(0);opacity:0}
+.btn:active::after{animation:ripple .4s ease-out}
+
+/* sidebar */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;animation:fadeInLeft .3s ease}
+.logo{padding:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.logo-icon{font-size:20px;animation:beeFloat 3s ease-in-out infinite}
+.logo-name{font-size:16px;font-weight:700;color:var(--text)}
+.logo-name span{color:var(--accent)}
+.nav{flex:1;padding:8px;overflow-y:auto}
+.ns{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:10px 8px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);cursor:pointer;font-size:13px;color:var(--text2);transition:all .18s;margin-bottom:1px;user-select:none}
+.ni:hover{background:var(--bg3);color:var(--text);transform:translateX(3px)}
+.ni.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.nb{margin-left:auto;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;animation:pulse 2s infinite}
+.sf{padding:10px 8px;border-top:1px solid var(--border)}
+.ur{display:flex;align-items:center;gap:8px;padding:8px;border-radius:var(--rs)}
+.av{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;transition:transform .2s}
+.av:hover{transform:scale(1.1)}
+.av.t{background:var(--amber)}
+.av.a{background:var(--red)}
+.ui{flex:1;min-width:0}
+.un{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur2{font-size:10px;color:var(--text3)}
+.ib{width:26px;height:26px;border:1px solid var(--border);background:var(--bg);border-radius:5px;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s}
+.ib:hover{background:var(--bg3);transform:rotate(10deg)}
+
+/* xp bar */
+.xp-bar-wrap{padding:6px 8px 4px;border-top:1px solid var(--border)}
+.xp-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px}
+.xp-bar{height:5px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.xp-pts{font-size:10px;color:var(--amber);font-weight:600;text-align:center;padding:4px 0 8px}
+.xp-animate{animation:xpPop .4s ease}
+
+/* main */
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .3s ease}
+.ph{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.pt{font-size:20px;font-weight:700;color:var(--text)}
+.ps{font-size:13px;color:var(--text3);margin-top:2px}
+.content{padding:14px 24px 36px}
+
+/* stats */
+.sr{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;transition:all .2s;animation:fadeIn .35s ease both}
+.sc:hover{border-color:var(--accent);transform:translateY(-2px)}
+.sl{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.sv{font-size:20px;font-weight:700;color:var(--text)}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px;animation:fadeIn .35s ease both}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-size:13px;font-weight:600;color:var(--text)}
+.cl{font-size:11px;color:var(--accent);cursor:pointer;font-weight:500;transition:opacity .15s}
+.cl:hover{opacity:.7}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+
+/* subject chips */
+.sb{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.sc2{padding:4px 11px;border:1px solid var(--border);border-radius:99px;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;background:var(--bg2);transition:all .18s;white-space:nowrap}
+.sc2:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.05)}
+.sc2.active{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.05)}
+
+/* badges */
+.bdg{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px}
+.bl{background:var(--red-bg);color:var(--red)}
+.bo{background:var(--green-bg);color:var(--green)}
+.ba{background:var(--accent-bg);color:var(--accent)}
+.bam{background:var(--amber-bg);color:var(--amber)}
+
+/* room cards */
+.rc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .2s;margin-bottom:9px;animation:fadeIn .35s ease both}
+.rc:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(91,94,244,.12);transform:translateY(-2px)}
+.rt{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px}
+.ri{font-size:24px}
+.rn{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.rs{font-size:11px;color:var(--text3);margin-bottom:8px}
+.rf{display:flex;align-items:center;justify-content:space-between}
+
+/* doubts */
+.dc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:9px;transition:all .2s;animation:fadeIn .35s ease both}
+.dc:hover{border-color:var(--accent);transform:translateX(3px)}
+.drow{display:flex;gap:10px}
+.vc{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:30px}
+.vb{width:25px;height:21px;border:1px solid var(--border);background:var(--bg2);border-radius:4px;font-size:10px;color:var(--text3);cursor:pointer;transition:all .18s}
+.vb:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.15)}
+.vcnt{font-size:12px;font-weight:700;color:var(--text)}
+.db{flex:1}
+.dt{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px;line-height:1.4}
+.dm{display:flex;gap:6px;flex-wrap:wrap;font-size:10px;color:var(--text3);align-items:center}
+.tag{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:500;background:var(--bg3);color:var(--text2)}
+.tg{background:var(--green-bg);color:var(--green)}
+.ta{background:var(--accent-bg);color:var(--accent)}
+.tam{background:var(--amber-bg);color:var(--amber)}
+
+/* materials */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;transition:all .2s;animation:fadeIn .35s ease both}
+.mc:hover{border-color:var(--accent);transform:translateX(3px)}
+.mi{width:36px;height:36px;border-radius:7px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:transform .2s}
+.mc:hover .mi{transform:rotate(8deg) scale(1.1)}
+.mif{flex:1;min-width:0}
+.mn{font-size:13px;font-weight:500;color:var(--text)}
+.mm{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* debate */
+.dbc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px;transition:all .2s;animation:fadeIn .35s ease both}
+.dbc:hover{border-color:var(--accent)}
+.dbt{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px}
+.dbs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+.sbox{padding:9px;border-radius:var(--rs);text-align:center;transition:transform .2s}
+.sbox:hover{transform:scale(1.02)}
+.sf2{background:var(--green-bg);border:1px solid var(--green)}
+.sag{background:var(--red-bg);border:1px solid var(--red)}
+.slbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.sf2 .slbl{color:var(--green)}.sag .slbl{color:var(--red)}
+.sval{font-size:18px;font-weight:700;transition:transform .3s}
+.sf2 .sval{color:var(--green)}.sag .sval{color:var(--red)}
+
+/* tests */
+.tc2{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px;animation:fadeIn .35s ease both}
+.ttitle{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+.tq{background:var(--bg2);border-radius:var(--rs);padding:12px;margin-bottom:8px}
+.tqt{font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px}
+.topt{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--text);transition:all .15s}
+.topt:hover{background:var(--bg3);transform:translateX(3px)}
+.topt.selected{background:var(--accent-bg);color:var(--accent)}
+.topt.correct{background:var(--green-bg);color:var(--green)}
+.topt.wrong{background:var(--red-bg);color:var(--red)}
+
+/* chat */
+.chat-page{display:flex;flex-direction:column;height:100vh}
+.chdr{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;animation:slideDown .3s ease}
+.cht{font-size:14px;font-weight:600;color:var(--text)}
+.chs{font-size:11px;color:var(--text3)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:7px;align-items:flex-end;animation:msgIn .25s ease both}
+.msg.me{flex-direction:row-reverse}
+.mav{width:25px;height:25px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.mav.t{background:var(--amber)}.mav.a{background:var(--red)}
+.mcnt{max-width:62%}
+.mname{font-size:9px;color:var(--text3);margin-bottom:2px}
+.msg.me .mname{text-align:right}
+.bbl{padding:8px 11px;border-radius:11px 11px 11px 2px;font-size:12px;line-height:1.5;background:var(--bg3);color:var(--text);transition:transform .15s}
+.bbl:hover{transform:scale(1.01)}
+.msg.me .bbl{background:var(--accent);color:#fff;border-radius:11px 11px 2px 11px}
+.bbl.t{background:var(--amber-bg);border:1px solid var(--border)}
+.mt{font-size:9px;color:var(--text3);margin-top:2px}
+.msg.me .mt{text-align:right}
+.cirow{padding:9px 13px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-shrink:0}
+.ci{flex:1;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);color:var(--text);font-size:12px;outline:none;transition:all .2s}
+.ci:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
+.sb2{width:34px;height:34px;background:var(--accent);border:none;border-radius:var(--rs);font-size:14px;color:#fff;cursor:pointer;transition:all .18s}
+.sb2:hover{background:var(--accent2);transform:scale(1.08)}
+.sb2:active{transform:scale(.95)}
+
+/* typing indicator */
+.typing-dots{display:flex;gap:3px;padding:8px 12px;background:var(--bg3);border-radius:11px;width:fit-content}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:dotBounce 1.2s ease infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+
+/* video room */
+#vroom{display:none;position:fixed;inset:0;z-index:400;background:var(--bg);flex-direction:column}
+#vroom.open{display:flex;animation:fadeIn .3s ease}
+.vhdr{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
+
+/* loading spinner */
+.spinner{width:32px;height:32px;border:3px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center}
+.ov.open{display:flex;animation:fadeIn .2s ease}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;width:440px;max-width:92vw;max-height:90vh;overflow-y:auto;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+.mtitle{font-size:15px;font-weight:700;margin-bottom:15px;color:var(--text)}
+.mact{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}
+
+/* toast */
+#toast{position:fixed;bottom:22px;right:22px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 15px;font-size:13px;color:var(--text);max-width:280px;animation:fadeIn .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.toast-item.good{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.toast-item.warn{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}
+.toast-item.bad{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+
+/* skeleton loader */
+.skeleton{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg2) 50%,var(--bg3) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite;border-radius:var(--rs);height:16px;margin-bottom:8px}
+
+/* live pulse dot */
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:4px;animation:pulse 1.5s infinite}
+
+@media(max-width:720px){
+  .sidebar{display:none}
+  .sr{grid-template-columns:1fr 1fr}
+  .g2,.g3{grid-template-columns:1fr}
+  .content{padding:12px 13px 28px}
+  .ph{padding:14px 13px 0}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<div id="toast"></div>
+
+<!-- AUTH -->
+<div class="screen active" id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">🐝</div>
+    <div class="auth-title">StudyHive</div>
+    <div class="auth-sub">Learn together. Grow together.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login',this)">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('register',this)">Register</button>
+    </div>
+    <div id="auth-err" class="err"></div>
+    <div id="auth-info" class="info"></div>
+    <div id="login-form">
+      <div class="fr"><label class="fl">Email</label><input class="fi" id="l-email" placeholder="your@email.com"/></div>
+      <div class="fr"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn btn-p btn-full" onclick="doLogin()">Sign In 🚀</button>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">Admin: email = <b>admin</b></div>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="fr"><label class="fl">Full Name</label><input class="fi" id="r-name" placeholder="Your full name"/></div>
+      <div class="fr"><label class="fl">Email</label><input class="fi" id="r-email" placeholder="your@email.com"/></div>
+      <div class="fr"><label class="fl">Password</label><input class="fi" type="password" id="r-pass" placeholder="Choose a password"/></div>
+      <div class="fr"><label class="fl">I am a</label>
+        <select class="fs" id="r-role">
+          <option value="student">🎒 Student</option>
+          <option value="teacher">🎓 Teacher (auto-approved)</option>
+        </select>
+      </div>
+      <button class="btn btn-p btn-full" onclick="doRegister()">Create Account ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="screen" id="app-screen">
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">🐝</span>
+      <span class="logo-name">Study<span>Hive</span></span>
+    </div>
+    <nav class="nav">
+      <div class="ns">Learn</div>
+      <div class="ni active" onclick="go('dashboard',this)">🏠 Dashboard</div>
+      <div class="ni" onclick="go('rooms',this)">👥 Study Rooms <span class="nb" id="nb-r">0</span></div>
+      <div class="ni" onclick="go('doubts',this)">❓ Doubts <span class="nb" id="nb-d">0</span></div>
+      <div class="ni" onclick="go('materials',this)">📄 Materials</div>
+      <div class="ni" onclick="go('tests',this)">📝 Tests <span class="nb" id="nb-t">0</span></div>
+      <div class="ni" onclick="go('debate',this)">⚔️ Debate</div>
+      <div class="ns">Connect</div>
+      <div class="ni" onclick="go('chat',this)">💬 General Chat</div>
+      <div class="ni" id="admin-ni" style="display:none" onclick="window.open('/admin','_blank')">🛡️ Admin Panel ↗</div>
+    </nav>
+    <div class="xp-bar-wrap">
+      <div class="xp-label"><span id="xp-lvl">Level 0</span><span id="xp-val">0 XP</span></div>
+      <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="xp-pts">⭐ <span id="pts-val">0</span> Points</div>
+    <div class="sf">
+      <div class="ur">
+        <div class="av" id="s-av">?</div>
+        <div class="ui">
+          <div class="un" id="s-name">—</div>
+          <div class="ur2" id="s-role">—</div>
+        </div>
+        <button class="ib" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+        <button class="ib" onclick="doSignOut()" title="Sign out">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="ph">
+        <div>
+          <div class="pt" id="d-greet">Welcome!</div>
+          <div class="ps">StudyHive — Learn Together 🐝</div>
+        </div>
+        <button class="btn btn-p" onclick="openModal('room-modal')">+ New Room</button>
+      </div>
+      <div class="content">
+        <div class="sr stagger">
+          <div class="sc ani-fade"><div class="sl">Study Rooms</div><div class="sv" id="ds-r">0</div></div>
+          <div class="sc ani-fade"><div class="sl">Open Doubts</div><div class="sv" id="ds-d">0</div></div>
+          <div class="sc ani-fade"><div class="sl">Materials</div><div class="sv" id="ds-m">0</div></div>
+          <div class="sc ani-fade"><div class="sl">Tests</div><div class="sv" id="ds-t">0</div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="ch"><span class="ct">🔴 Live Rooms</span><span class="cl" onclick="go('rooms',null)">View all →</span></div><div id="dash-rooms"></div></div>
+          <div class="card"><div class="ch"><span class="ct">❓ Recent Doubts</span><span class="cl" onclick="go('doubts',null)">View all →</span></div><div id="dash-doubts"></div></div>
+        </div>
+        <div class="card"><div class="ch"><span class="ct">📝 Latest Tests</span><span class="cl" onclick="go('tests',null)">View all →</span></div><div id="dash-tests"></div></div>
+      </div>
+    </div>
+
+    <!-- ROOMS -->
+    <div class="page" id="page-rooms">
+      <div class="ph">
+        <div><div class="pt">Study Rooms</div><div class="ps">Text chat or video rooms with mic & camera</div></div>
+        <button class="btn btn-p" onclick="openModal('room-modal')">+ Create Room</button>
+      </div>
+      <div class="content">
+        <div class="sb" id="rooms-filter">
+          <div class="sc2 active" onclick="filterChip(this,'rooms-filter',()=>loadRooms())">All</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Physics'))">⚡ Physics</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Chemistry'))">🧪 Chemistry</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Biology'))">🧬 Biology</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Maths 1'))">🔢 Maths 1</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Maths 2'))">📐 Maths 2</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('English'))">📚 English</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('History'))">🏛️ History</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Computer Science'))">💻 CS</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Economics'))">📊 Economics</div>
+          <div class="sc2" onclick="filterChip(this,'rooms-filter',()=>loadRooms('Geography'))">🗺️ Geography</div>
+        </div>
+        <div id="rooms-list"></div>
+      </div>
+    </div>
+
+    <!-- DOUBTS -->
+    <div class="page" id="page-doubts">
+      <div class="ph">
+        <div><div class="pt">Doubt Corner</div><div class="ps">Ask anything. Get answers.</div></div>
+        <button class="btn btn-p" onclick="openModal('doubt-modal')">+ Ask Doubt</button>
+      </div>
+      <div class="content">
+        <div class="sb" id="doubts-filter">
+          <div class="sc2 active" onclick="filterChip(this,'doubts-filter',()=>loadDoubts())">All</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('Physics'))">⚡ Physics</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('Chemistry'))">🧪 Chemistry</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('Biology'))">🧬 Biology</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('Maths 1'))">🔢 Maths 1</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('Maths 2'))">📐 Maths 2</div>
+          <div class="sc2" onclick="filterChip(this,'doubts-filter',()=>loadDoubts('English'))">📚 English</div>
+        </div>
+        <div id="doubts-list"></div>
+      </div>
+    </div>
+
+    <!-- MATERIALS -->
+    <div class="page" id="page-materials">
+      <div class="ph">
+        <div><div class="pt">Study Materials</div><div class="ps">Notes, PDFs and links from teachers & students</div></div>
+        <div id="post-mat-btn"><button class="btn btn-p" onclick="openModal('material-modal')">+ Post Material</button></div>
+      </div>
+      <div class="content">
+        <div class="sb" id="mat-filter">
+          <div class="sc2 active" onclick="filterChip(this,'mat-filter',()=>loadMaterials())">All</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('Physics'))">⚡ Physics</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('Chemistry'))">🧪 Chemistry</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('Biology'))">🧬 Biology</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('Maths 1'))">🔢 Maths 1</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('Maths 2'))">📐 Maths 2</div>
+          <div class="sc2" onclick="filterChip(this,'mat-filter',()=>loadMaterials('English'))">📚 English</div>
+        </div>
+        <div id="materials-list"></div>
+      </div>
+    </div>
+
+    <!-- TESTS -->
+    <div class="page" id="page-tests">
+      <div class="ph">
+        <div><div class="pt">Tests</div><div class="ps">Complete tests to earn XP & points</div></div>
+        <div id="post-test-btn" style="display:none"><button class="btn btn-p" onclick="openModal('test-modal')">+ Post Test</button></div>
+      </div>
+      <div class="content" id="tests-content"></div>
+    </div>
+
+    <!-- DEBATE -->
+    <div class="page" id="page-debate">
+      <div class="ph">
+        <div><div class="pt">⚔️ Debate Room</div><div class="ps">Pick a side and argue your case!</div></div>
+        <button class="btn btn-p" onclick="openModal('debate-modal')">+ Start Debate</button>
+      </div>
+      <div class="content" id="debate-list"></div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="page" id="page-chat">
+      <div class="chat-page">
+        <div class="chdr">
+          <div>
+            <div class="cht" id="chat-room-name">General Chat</div>
+            <div class="chs" id="chat-room-sub">StudyHive community</div>
+          </div>
+          <button class="btn btn-sm btn-p" onclick="openVideoRoom(document.getElementById('chat-room-name').textContent)">📹 Video Room</button>
+        </div>
+        <div class="chat-msgs" id="chat-msgs"></div>
+        <div id="typing-area" style="padding:0 14px 4px;display:none">
+          <div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+        </div>
+        <div class="cirow">
+          <input class="ci" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+          <button class="sb2" onclick="sendMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- VIDEO ROOM -->
+<div id="vroom">
+  <div class="vhdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">📹</span>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)" id="vr-room-name">Video Room</div>
+        <div style="font-size:11px;color:var(--text3)">Powered by Jitsi · Free · Global 🌍</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="font-size:12px;color:var(--text3)" id="vr-participants">Connecting...</div>
+      <button class="btn btn-sm btn-p" onclick="copyRoomLink()">🔗 Copy Link</button>
+      <button class="btn btn-sm btn-r" onclick="closeVideo()">✕ Leave</button>
+    </div>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden">
+    <div id="jitsi-container" style="width:100%;height:100%"></div>
+    <div id="vr-loading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:10">
+      <div class="spinner"></div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">Joining Video Room...</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Connecting to Jitsi — free & global</div>
+      <div style="width:200px;height:4px;background:var(--bg3);border-radius:99px;overflow:hidden">
+        <div id="vr-progress" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;width:0%;transition:width .3s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px">⚠️ Needs HTTPS for mic & camera. Use ngrok or deploy to Render.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="ov" id="room-modal">
+  <div class="modal">
+    <div class="mtitle">🚪 Create Study Room</div>
+    <div class="fr"><label class="fl">Room Name</label><input class="fi" id="rm-n" placeholder="e.g. JEE Maths Group"/></div>
+    <div class="fr"><label class="fl">Subject</label>
+      <select class="fs" id="rm-s">
+        <option>Physics</option><option>Chemistry</option><option>Biology</option>
+        <option>Maths 1</option><option>Maths 2</option><option>English</option>
+        <option>History</option><option>Computer Science</option><option>Economics</option><option>Geography</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fr"><label class="fl">Type</label>
+      <select class="fs" id="rm-t">
+        <option value="text">💬 Text Chat</option>
+        <option value="video">📹 Video + Mic (Jitsi)</option>
+      </select>
+    </div>
+    <div class="mact"><button class="btn" onclick="closeModal('room-modal')">Cancel</button><button class="btn btn-p" onclick="createRoom()">Create ✨</button></div>
+  </div>
+</div>
+
+<div class="ov" id="doubt-modal">
+  <div class="modal">
+    <div class="mtitle">❓ Ask a Doubt</div>
+    <div class="fr"><label class="fl">Question</label><input class="fi" id="dm-t" placeholder="What is your doubt?"/></div>
+    <div class="fr"><label class="fl">Subject</label>
+      <select class="fs" id="dm-s"><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Maths 1</option><option>Maths 2</option><option>English</option><option>Other</option></select>
+    </div>
+    <div class="fr"><label class="fl">Details (optional)</label><textarea class="ft" id="dm-d" placeholder="Add more context..."></textarea></div>
+    <div class="mact"><button class="btn" onclick="closeModal('doubt-modal')">Cancel</button><button class="btn btn-p" onclick="submitDoubt()">Post 🚀</button></div>
+  </div>
+</div>
+
+<div class="ov" id="material-modal">
+  <div class="modal">
+    <div class="mtitle">📄 Post Study Material</div>
+    <div class="fr"><label class="fl">Title</label><input class="fi" id="mat-t" placeholder="e.g. Calculus Notes"/></div>
+    <div class="fr"><label class="fl">Subject</label>
+      <select class="fs" id="mat-s"><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Maths 1</option><option>Maths 2</option><option>English</option><option>History</option><option>Computer Science</option><option>Economics</option><option>Geography</option><option>Other</option></select>
+    </div>
+    <div class="fr"><label class="fl">Link (Google Drive / PDF URL)</label><input class="fi" id="mat-l" placeholder="https://drive.google.com/..."/></div>
+    <div class="fr"><label class="fl">Description</label><textarea class="ft" id="mat-d" placeholder="Brief description..."></textarea></div>
+    <div class="mact"><button class="btn" onclick="closeModal('material-modal')">Cancel</button><button class="btn btn-p" onclick="submitMaterial()">Post ✨</button></div>
+  </div>
+</div>
+
+<div class="ov" id="test-modal">
+  <div class="modal">
+    <div class="mtitle">📝 Post a Test</div>
+    <div class="fr"><label class="fl">Test Title</label><input class="fi" id="test-title" placeholder="e.g. Newton's Laws Quiz"/></div>
+    <div class="fr"><label class="fl">Subject</label>
+      <select class="fs" id="test-subj"><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Maths 1</option><option>Maths 2</option><option>English</option><option>Other</option></select>
+    </div>
+    <div class="fr"><label class="fl">XP Reward (max)</label><input class="fi" type="number" id="test-xp" value="30" min="5" max="100"/></div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Add up to 5 MCQ questions</div>
+    <div id="questions-builder"></div>
+    <button class="btn btn-sm" onclick="addQuestion()" style="margin-bottom:12px">+ Add Question</button>
+    <div class="mact"><button class="btn" onclick="closeModal('test-modal')">Cancel</button><button class="btn btn-p" onclick="submitTest()">Post Test 🎯</button></div>
+  </div>
+</div>
+
+<div class="ov" id="debate-modal">
+  <div class="modal">
+    <div class="mtitle">⚔️ Start a Debate</div>
+    <div class="fr"><label class="fl">Topic</label><input class="fi" id="deb-t" placeholder="e.g. Is online education better?"/></div>
+    <div class="fr"><label class="fl">Subject</label>
+      <select class="fs" id="deb-s"><option>General</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>Maths 1</option><option>Maths 2</option><option>English</option><option>Other</option></select>
+    </div>
+    <div class="mact"><button class="btn" onclick="closeModal('debate-modal')">Cancel</button><button class="btn btn-p" onclick="createDebate()">Start ⚔️</button></div>
+  </div>
+</div>
+
+<script>
+const socket=io();
+let ME=null,curRoom="general",jitsiApi=null,dark=false,testQuestions=[],testAnswers={};
+const sicons={Physics:"⚡",Chemistry:"🧪",Biology:"🧬","Maths 1":"🔢","Maths 2":"📐",English:"📚",History:"🏛️","Computer Science":"💻",Economics:"📊",Geography:"🗺️",Other:"📖",General:"🌐"};
+
+function switchTab(tab,el){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('login-form').style.display=tab==='login'?'block':'none';
+  document.getElementById('register-form').style.display=tab==='register'?'block':'none';
+  hideMsg();
+}
+function showErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.style.display='block';document.getElementById('auth-info').style.display='none'}
+function showInfo(m){const e=document.getElementById('auth-info');e.textContent=m;e.style.display='block';document.getElementById('auth-err').style.display='none'}
+function hideMsg(){document.getElementById('auth-err').style.display='none';document.getElementById('auth-info').style.display='none'}
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value.trim();
+  if(!email||!pass)return showErr('Enter email and password');
+  const btn=event.target;btn.textContent='Signing in...';btn.disabled=true;
+  const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+  const d=await res.json();
+  btn.textContent='Sign In 🚀';btn.disabled=false;
+  if(d.error)return showErr(d.error);
+  launchApp(d);
+}
+
+async function doRegister(){
+  const name=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value.trim();
+  const role=document.getElementById('r-role').value;
+  if(!name||!email||!pass)return showErr('All fields required');
+  const btn=event.target;btn.textContent='Creating...';btn.disabled=true;
+  const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass,role})});
+  const d=await res.json();
+  btn.textContent='Create Account ✨';btn.disabled=false;
+  if(d.error)return showErr(d.error);
+  if(d.status==='pending')return showInfo('✅ Account created! Waiting for admin approval. Come back after approval.');
+  launchApp(d);
+}
+
+function launchApp(user){
+  ME=user;
+  document.getElementById('auth-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+  const av=document.getElementById('s-av');
+  av.textContent=user.name[0].toUpperCase();
+  av.className='av'+(user.role==='teacher'?' t':user.role==='admin'?' a':'');
+  document.getElementById('s-name').textContent=user.name;
+  document.getElementById('s-role').textContent=user.role.charAt(0).toUpperCase()+user.role.slice(1);
+  const h=new Date().getHours();
+  document.getElementById('d-greet').textContent=(h<12?'Good morning ☀️':h<17?'Good afternoon 🌤️':'Good evening 🌙')+', '+user.name.split(' ')[0]+'!';
+  if(user.role==='admin'||user.role==='teacher'){
+    document.getElementById('admin-ni').style.display='flex';
+    document.getElementById('post-test-btn').style.display='block';
+  }
+  updateXP(user.xp||0,user.points||0);
+  socket.emit('register_session',{uid:user.uid});
+  loadRooms();loadDoubts();loadMaterials();loadTests();loadDebates();
+  loadChat('general','General Chat');
+  toast('Welcome back, '+user.name.split(' ')[0]+'! 🐝','good');
+}
+
+function doSignOut(){ME=null;location.reload()}
+
+function updateXP(xp,pts){
+  if(!ME)return;
+  ME.xp=xp;ME.points=pts;ME.level=Math.floor(xp/100);
+  document.getElementById('xp-lvl').textContent='Level '+ME.level;
+  document.getElementById('xp-val').textContent=xp+' XP';
+  const fill=document.getElementById('xp-fill');
+  fill.style.width=(xp%100)+'%';
+  fill.classList.add('xp-animate');
+  setTimeout(()=>fill.classList.remove('xp-animate'),500);
+  document.getElementById('pts-val').textContent=pts;
+}
+
+socket.on('xp_update',d=>{updateXP(d.xp,d.points);toast('⭐ +'+d.xp+' XP — '+d.reason,'good')});
+socket.on('warning',d=>toast('⚠️ Warning: '+d.message,'warn'));
+socket.on('admin_message',d=>toast('📩 Rushith: '+d.message,'warn'));
+socket.on('account_approved',()=>toast('✅ Your account has been approved!','good'));
+socket.on('account_rejected',()=>{toast('❌ Your account was rejected.','bad');setTimeout(()=>location.reload(),3000)});
+socket.on('force_logout',d=>{toast('🚫 '+d.reason,'bad');setTimeout(()=>location.reload(),2500)});
+socket.on('kicked',d=>{toast('👢 Removed: '+d.reason,'bad');go('dashboard',null)});
+socket.on('new_message',d=>{if(d.room_id===curRoom)appendMsg(d)});
+socket.on('user_joined',d=>appendSys('👋 '+d.name+' joined'));
+socket.on('user_left',d=>appendSys('👋 '+d.name+' left'));
+socket.on('room_created',()=>loadRooms());
+socket.on('new_doubt',()=>loadDoubts());
+socket.on('new_test',()=>loadTests());
+socket.on('new_debate',()=>loadDebates());
+socket.on('message_history',msgs=>{document.getElementById('chat-msgs').innerHTML='';msgs.forEach(m=>appendMsg(m))});
+
+function go(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el)el.classList.add('active');
+}
+
+async function loadRooms(subj){
+  const res=await fetch('/api/rooms');
+  let rooms=await res.json();
+  if(subj)rooms=rooms.filter(r=>r.subject===subj);
+  document.getElementById('nb-r').textContent=rooms.length;
+  document.getElementById('ds-r').textContent=rooms.length;
+  const el=document.getElementById('rooms-list');
+  if(!rooms.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">No rooms yet. Create one! 🚀</div>';return}
+  el.innerHTML=rooms.map((r,i)=>`
+    <div class="rc lift" style="animation-delay:${i*.05}s" onclick="joinRoom('${r.id}','${r.name}','${r.type||'text'}')">
+      <div class="rt">
+        <span class="ri">${sicons[r.subject]||'📖'}</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${r.type==='video'?'<span class="bdg ba">📹 Video</span>':''}
+          <span class="bdg ${r.live?'bl':'bo'}">${r.live?'<span class="live-dot"></span>LIVE':'● OPEN'}</span>
+        </div>
+      </div>
+      <div class="rn">${r.name}</div>
+      <div class="rs">Host: ${r.host} · ${r.subject}</div>
+      <div class="rf"><span class="tag">${r.subject}</span><button class="btn btn-sm btn-p">Join →</button></div>
+    </div>`).join('');
+  const live=rooms.filter(r=>r.live).slice(0,2);
+  document.getElementById('dash-rooms').innerHTML=live.length
+    ?live.map(r=>`<div class="rc lift" onclick="joinRoom('${r.id}','${r.name}','${r.type||'text'}')"><div class="rt"><span>${sicons[r.subject]||'📖'}</span><span class="bdg bl"><span class="live-dot"></span>LIVE</span></div><div class="rn">${r.name}</div><div class="rs">${r.subject} · ${r.type==='video'?'📹 Video':'💬 Text'}</div></div>`).join('')
+    :'<div style="color:var(--text3);font-size:13px">No live rooms right now.</div>';
+}
+
+function joinRoom(id,name,type){
+  curRoom=id;
+  if(type==='video'){openVideoRoom(name);return}
+  document.getElementById('chat-room-name').textContent=name;
+  document.getElementById('chat-room-sub').textContent='Study room · '+name;
+  loadChat(id,name);
+  socket.emit('join_room',{room_id:id,uid:ME.uid,name:ME.name});
+  go('chat',null);
+}
+
+async function createRoom(){
+  const name=document.getElementById('rm-n').value.trim();
+  if(!name)return alert('Enter a room name');
+  await fetch('/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,subject:document.getElementById('rm-s').value,type:document.getElementById('rm-t').value,host:ME.name,hostId:ME.uid})});
+  closeModal('room-modal');
+  document.getElementById('rm-n').value='';
+  loadRooms();go('rooms',null);
+  toast('Room created! 🚀','good');
+}
+
+async function loadDoubts(subj){
+  const res=await fetch('/api/doubts'+(subj?'?subject='+subj:''));
+  const doubts=await res.json();
+  const open=doubts.filter(d=>!d.answered).length;
+  document.getElementById('nb-d').textContent=open;
+  document.getElementById('ds-d').textContent=open;
+  const el=document.getElementById('doubts-list');
+  if(!doubts.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">No doubts yet. Ask the first! ❓</div>';return}
+  el.innerHTML=doubts.map((d,i)=>`
+    <div class="dc" style="animation-delay:${i*.05}s">
+      <div class="drow">
+        <div class="vc">
+          <button class="vb" onclick="voteDoubt('${d.id}')">▲</button>
+          <div class="vcnt" id="vd-${d.id}">${d.votes}</div>
+          <button class="vb">▼</button>
+        </div>
+        <div class="db">
+          <div class="dt">${d.title}</div>
+          ${d.details?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">${d.details}</div>`:''}
+          <div class="dm">
+            <span class="tag">${d.subject}</span>
+            ${d.answered?'<span class="tag tg">✔ Answered</span>':'<span class="tag tam">⏳ Pending</span>'}
+            <span>by ${d.author} · ${d.time}</span>
+          </div>
+        </div>
+        ${(ME?.role==='teacher'||ME?.role==='admin')&&!d.answered?`<button class="btn btn-sm btn-g" onclick="markAnswered('${d.id}','${d.authorId}')">✔ Answer</button>`:''}
+      </div>
+    </div>`).join('');
+  document.getElementById('dash-doubts').innerHTML=doubts.slice(0,3).map(d=>`
+    <div class="dc" style="margin-bottom:7px">
+      <div class="dt" style="font-size:12px">${d.title}</div>
+      <div class="dm" style="margin-top:4px"><span class="tag">${d.subject}</span>${d.answered?'<span class="tag tg">✔</span>':'<span class="tag tam">⏳</span>'}</div>
+    </div>`).join('');
+}
+
+async function submitDoubt(){
+  const t=document.getElementById('dm-t').value.trim();
+  if(!t)return alert('Enter your doubt');
+  await fetch('/api/doubts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,details:document.getElementById('dm-d').value.trim(),subject:document.getElementById('dm-s').value,author:ME.name,authorId:ME.uid})});
+  closeModal('doubt-modal');
+  document.getElementById('dm-t').value='';document.getElementById('dm-d').value='';
+  loadDoubts();toast('Doubt posted! Teachers will answer soon 📚','good');
+}
+
+async function voteDoubt(id){
+  await fetch('/api/doubts/'+id+'/vote',{method:'POST'});
+  const el=document.getElementById('vd-'+id);
+  if(el){
+    el.textContent=parseInt(el.textContent)+1;
+    el.style.animation='xpPop .3s ease';
+    setTimeout(()=>el.style.animation='',300);
+  }
+}
+
+async function markAnswered(id,authorId){
+  await fetch('/api/doubts/'+id+'/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({authorId})});
+  loadDoubts();toast('Doubt marked as answered! +15 XP to student ⭐','good');
+}
+
+async function loadMaterials(subj){
+  const res=await fetch('/api/materials');
+  let mats=await res.json();
+  if(subj)mats=mats.filter(m=>m.subject===subj);
+  document.getElementById('ds-m').textContent=mats.length;
+  const el=document.getElementById('materials-list');
+  if(!mats.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">No materials yet. Be the first to post! 📄</div>';return}
+  el.innerHTML=mats.map((m,i)=>`
+    <div class="mc" style="animation-delay:${i*.05}s">
+      <div class="mi">${sicons[m.subject]||'📄'}</div>
+      <div class="mif">
+        <div class="mn">${m.title}</div>
+        <div class="mm">${m.subject} · by ${m.author} (${m.role}) · ${m.time}</div>
+        ${m.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${m.desc}</div>`:''}
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        ${m.link?`<a href="${m.link}" target="_blank"><button class="btn btn-sm btn-p">Open ↗</button></a>`:''}
+        ${ME?.uid===m.authorId||ME?.role==='admin'?`<button class="btn btn-sm btn-r" onclick="deleteMat('${m.id}')">🗑️</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function submitMaterial(){
+  const t=document.getElementById('mat-t').value.trim();
+  if(!t)return alert('Enter a title');
+  await fetch('/api/materials',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,subject:document.getElementById('mat-s').value,link:document.getElementById('mat-l').value.trim(),desc:document.getElementById('mat-d').value.trim(),author:ME.name,authorId:ME.uid,role:ME.role})});
+  closeModal('material-modal');
+  ['mat-t','mat-l','mat-d'].forEach(i=>document.getElementById(i).value='');
+  loadMaterials();toast('Material posted! 📄','good');
+}
+
+async function deleteMat(id){
+  if(confirm('Delete this material?')){await fetch('/api/materials/'+id,{method:'DELETE'});loadMaterials();toast('Deleted','warn')}
+}
+
+function addQuestion(){
+  if(testQuestions.length>=5)return alert('Max 5 questions');
+  testQuestions.push({text:'',options:['','','',''],correct:0});
+  renderQBuilder();
+}
+
+function renderQBuilder(){
+  document.getElementById('questions-builder').innerHTML=testQuestions.map((q,qi)=>`
+    <div style="background:var(--bg2);border-radius:var(--rs);padding:11px;margin-bottom:9px;border:1px solid var(--border);animation:fadeIn .25s ease">
+      <div class="fr"><label class="fl">Question ${qi+1}</label><input class="fi" value="${q.text}" oninput="testQuestions[${qi}].text=this.value" placeholder="Question text"/></div>
+      ${[0,1,2,3].map(oi=>`
+        <div style="display:flex;gap:7px;align-items:center;margin-bottom:5px">
+          <input type="radio" name="correct-${qi}" ${q.correct===oi?'checked':''} onchange="testQuestions[${qi}].correct=${oi}"/>
+          <input class="fi" style="flex:1" value="${q.options[oi]}" oninput="testQuestions[${qi}].options[${oi}]=this.value" placeholder="Option ${oi+1}"/>
+        </div>`).join('')}
+      <div style="font-size:10px;color:var(--text3)">● Select the correct answer</div>
+    </div>`).join('');
+}
+
+async function loadTests(){
+  const res=await fetch('/api/tests');
+  const tests=await res.json();
+  document.getElementById('nb-t').textContent=tests.filter(t=>!t.completedBy?.includes(ME?.uid)).length;
+  document.getElementById('ds-t').textContent=tests.length;
+  renderTests(tests);
+  document.getElementById('dash-tests').innerHTML=tests.slice(0,2).map(t=>`
+    <div style="padding:9px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:7px;background:var(--bg2);transition:.2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:13px;font-weight:500;color:var(--text)">${t.title}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.subject} · ⭐${t.xpReward} XP · ${t.questions.length}Q</div>
+    </div>`).join('');
+}
+
+function renderTests(tests){
+  const el=document.getElementById('tests-content');
+  if(!tests.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">No tests yet. 📝</div>';return}
+  el.innerHTML=tests.map(t=>{
+    const done=t.completedBy?.includes(ME?.uid);
+    return `<div class="tc2">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="ttitle">${t.title}</div>
+          <div style="font-size:11px;color:var(--text3)">${t.subject} · ${t.questions.length}Q · ⭐ up to ${t.xpReward} XP · by ${t.author}</div>
+        </div>
+        ${done?'<span class="bdg bo">✔ Done</span>':'<span class="bdg ba">Open</span>'}
+      </div>
+      ${done?'<div style="font-size:12px;color:var(--green);padding:8px;background:var(--green-bg);border-radius:var(--rs);animation:fadeIn .3s ease">🎉 You already completed this test!</div>'
+        :`<div>
+          ${t.questions.map((q,qi)=>`
+            <div class="tq">
+              <div class="tqt">Q${qi+1}. ${q.text}</div>
+              ${q.options.map((o,oi)=>`<div class="topt" id="topt-${t.id}-${qi}-${oi}" onclick="selectOpt('${t.id}',${qi},${oi})">${String.fromCharCode(65+oi)}. ${o}</div>`).join('')}
+            </div>`).join('')}
+          <button class="btn btn-p btn-sm" style="margin-top:5px" onclick="submitTestAnswers('${t.id}',${t.questions.length})">Submit Test 🎯</button>
+        </div>`}
+    </div>`;
+  }).join('');
+}
+
+function selectOpt(tid,qi,oi){
+  if(!testAnswers[tid])testAnswers[tid]={};
+  testAnswers[tid][qi]=oi;
+  document.querySelectorAll(`[id^="topt-${tid}-${qi}-"]`).forEach(el=>el.classList.remove('selected'));
+  const sel=document.getElementById(`topt-${tid}-${qi}-${oi}`);
+  if(sel){sel.classList.add('selected');sel.style.animation='popIn .2s ease';setTimeout(()=>sel.style.animation='',200)}
+}
+
+async function submitTestAnswers(tid,total){
+  const ans=testAnswers[tid]||{};
+  const answers=Array.from({length:total},(_,i)=>ans[i]??-1);
+  const res=await fetch('/api/tests/'+tid+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:ME.uid,answers})});
+  const d=await res.json();
+  if(d.error)return toast(d.error,'bad');
+  toast(`🎉 ${d.score}/${d.total} correct · +${d.xp_earned} XP!`,'good');
+  loadTests();
+}
+
+async function submitTest(){
+  const title=document.getElementById('test-title').value.trim();
+  if(!title)return alert('Enter test title');
+  if(!testQuestions.length)return alert('Add at least one question');
+  await fetch('/api/tests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,subject:document.getElementById('test-subj').value,xpReward:document.getElementById('test-xp').value,author:ME.name,authorId:ME.uid,questions:testQuestions})});
+  closeModal('test-modal');
+  testQuestions=[];document.getElementById('questions-builder').innerHTML='';document.getElementById('test-title').value='';
+  loadTests();toast('Test posted! Students will be notified 📝','good');
+}
+
+async function loadDebates(){
+  const res=await fetch('/api/debates');
+  const debates=await res.json();
+  const el=document.getElementById('debate-list');
+  if(!debates.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">No debates yet. Start one! ⚔️</div>';return}
+  el.innerHTML=debates.map((d,i)=>`
+    <div class="dbc" style="animation-delay:${i*.05}s">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="dbt">${d.topic}</div>
+        <span class="bdg bam">${d.subject}</span>
+      </div>
+      <div class="dbs">
+        <div class="sbox sf2">
+          <div class="slbl">For</div>
+          <div class="sval" id="dfor-${d.id}">${d.forVotes}</div>
+          <button class="btn btn-sm btn-g" style="margin-top:5px;width:100%" onclick="voteDebate('${d.id}','for')">👍 Vote For</button>
+        </div>
+        <div class="sbox sag">
+          <div class="slbl">Against</div>
+          <div class="sval" id="dagainst-${d.id}">${d.againstVotes}</div>
+          <button class="btn btn-sm btn-r" style="margin-top:5px;width:100%" onclick="voteDebate('${d.id}','against')">👎 Against</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;font-size:11px;color:var(--text3)">
+        <span>by ${d.author} · ${d.time}</span>
+        <button class="btn btn-sm" onclick="joinDebateRoom('${d.id}','${d.topic.replace(/'/g,'')}')">💬 Discuss</button>
+      </div>
+    </div>`).join('');
+}
+
+async function createDebate(){
+  const t=document.getElementById('deb-t').value.trim();
+  if(!t)return alert('Enter a topic');
+  await fetch('/api/debates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:t,subject:document.getElementById('deb-s').value,author:ME.name,authorId:ME.uid})});
+  closeModal('debate-modal');document.getElementById('deb-t').value='';
+  toast('Debate started! ⚔️','good');
+}
+
+async function voteDebate(id,side){
+  const res=await fetch('/api/debates/'+id+'/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({side})});
+  const d=await res.json();
+  const el=document.getElementById('d'+side+'-'+id);
+  if(el){el.textContent=side==='for'?d.forVotes:d.againstVotes;el.style.animation='xpPop .3s ease';setTimeout(()=>el.style.animation='',300)}
+}
+
+function joinDebateRoom(id,topic){loadChat('debate-'+id,'⚔️ '+topic);go('chat',null)}
+
+function loadChat(roomId,name){
+  curRoom=roomId;
+  document.getElementById('chat-room-name').textContent=name;
+  document.getElementById('chat-msgs').innerHTML='';
+  socket.emit('get_messages',{room_id:roomId});
+}
+
+async function sendMsg(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text||!ME)return;
+  socket.emit('send_message',{room_id:curRoom,text,name:ME.name,uid:ME.uid,role:ME.role});
+  input.value='';
+}
+
+function appendMsg(m){
+  const el=document.getElementById('chat-msgs');
+  const isMe=m.uid===ME?.uid;
+  const isT=m.role==='teacher';
+  const isA=m.role==='admin';
+  el.innerHTML+=`<div class="msg ${isMe?'me':''}">
+    <div class="mav ${isT?'t':isA?'a':''}">${(m.name||'?')[0]}</div>
+    <div class="mcnt">
+      <div class="mname">${m.name}${isT?' 🎓':isA?' 👑':''}</div>
+      <div class="bbl ${isT&&!isMe?'t':''}">${m.text}</div>
+      <div class="mt">${m.time||''}</div>
+    </div>
+  </div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+function appendSys(txt){
+  const el=document.getElementById('chat-msgs');
+  el.innerHTML+=`<div style="text-align:center;font-size:10px;color:var(--text3);padding:4px 0;animation:fadeIn .25s ease">● ${txt}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── Jitsi Video ──
+function openVideoRoom(roomName){
+  const sanitized=(roomName||'StudyHiveRoom').replace(/[^a-zA-Z0-9]/g,'').toLowerCase();
+  const fullRoomName='studyhive-'+sanitized+'-'+Math.random().toString(36).substr(2,4);
+  document.getElementById('vr-room-name').textContent=roomName||'Video Room';
+  document.getElementById('vroom').classList.add('open');
+  document.getElementById('vr-loading').style.display='flex';
+  document.getElementById('vr-progress').style.width='0%';
+  document.getElementById('vroom').dataset.roomName=fullRoomName;
+  let prog=0;
+  const pi=setInterval(()=>{prog=Math.min(prog+Math.random()*15,90);document.getElementById('vr-progress').style.width=prog+'%'},300);
+  if(!window.JitsiMeetExternalAPI){
+    const s=document.createElement('script');
+    s.src='https://meet.jit.si/external_api.js';
+    s.onload=()=>startJitsi(fullRoomName,pi);
+    s.onerror=()=>{clearInterval(pi);alert('Could not load Jitsi. Check internet or use HTTPS.');closeVideo()};
+    document.head.appendChild(s);
+  }else startJitsi(fullRoomName,pi);
+}
+
+function startJitsi(roomName,pi){
+  if(jitsiApi){try{jitsiApi.dispose()}catch(e){}jitsiApi=null}
+  document.getElementById('jitsi-container').innerHTML='';
+  const isTeacher=ME?.role==='teacher'||ME?.role==='admin';
+  jitsiApi=new JitsiMeetExternalAPI('meet.jit.si',{
+    roomName,parentNode:document.getElementById('jitsi-container'),width:'100%',height:'100%',
+    userInfo:{displayName:(ME?.name||'Student')+(isTeacher?' 🎓':''),email:ME?.email||''},
+    configOverwrite:{startWithAudioMuted:false,startWithVideoMuted:false,enableWelcomePage:false,prejoinPageEnabled:false,disableDeepLinking:true,toolbarButtons:['microphone','camera','desktop','chat','raisehand','tileview','participants-pane','hangup','settings','videoquality']},
+    interfaceConfigOverwrite:{SHOW_JITSI_WATERMARK:false,SHOW_WATERMARK_FOR_GUESTS:false,SHOW_POWERED_BY:false,DISPLAY_WELCOME_FOOTER:false,MOBILE_APP_PROMO:false,APP_NAME:'StudyHive'}
+  });
+  jitsiApi.on('videoConferenceJoined',()=>{
+    clearInterval(pi);
+    document.getElementById('vr-progress').style.width='100%';
+    setTimeout(()=>document.getElementById('vr-loading').style.display='none',400);
+    toast('📹 Joined video room! 🎉','good');
+  });
+  jitsiApi.on('participantJoined',()=>updateParticipants());
+  jitsiApi.on('participantLeft',()=>updateParticipants());
+  jitsiApi.on('videoConferenceLeft',()=>closeVideo());
+  jitsiApi.on('readyToClose',()=>closeVideo());
+}
+
+function updateParticipants(){
+  try{const c=jitsiApi.getNumberOfParticipants();document.getElementById('vr-participants').textContent=c+' participant'+(c!==1?'s':'')}catch(e){}
+}
+
+function copyRoomLink(){
+  const link='https://meet.jit.si/'+document.getElementById('vroom').dataset.roomName;
+  navigator.clipboard.writeText(link).then(()=>toast('🔗 Link copied! Share with anyone.','good')).catch(()=>prompt('Copy this link:',link));
+}
+
+function closeVideo(){
+  if(jitsiApi){try{jitsiApi.dispose()}catch(e){}jitsiApi=null}
+  document.getElementById('vroom').classList.remove('open');
+  document.getElementById('jitsi-container').innerHTML='';
+  document.getElementById('vr-loading').style.display='flex';
+  document.getElementById('vr-progress').style.width='0%';
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+function filterChip(el,groupId,cb){
+  document.querySelectorAll('#'+groupId+' .sc2').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  cb();
+}
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  const d=document.createElement('div');
+  d.className='toast-item'+(type?' '+type:'');
+  d.textContent=msg;
+  t.appendChild(d);
+  setTimeout(()=>{d.style.animation='fadeIn .25s ease reverse';setTimeout(()=>d.remove(),250)},4000);
+}
+
+function toggleTheme(){
+  dark=!dark;
+  document.body.setAttribute('data-theme',dark?'dark':'light');
+  document.querySelector('.ib').textContent=dark?'☀️':'🌙';
+  toast(dark?'Dark mode on 🌙':'Light mode on ☀️');
+}
+</script>
+</body>
+</html>

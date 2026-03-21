@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StudyHive Admin — Rushith</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f8fa;--bg3:#eef0f5;--card:#fff;--border:#e2e5ec;
+  --text:#111;--text2:#5a5f6e;--text3:#9097a8;
+  --accent:#5b5ef4;--accent2:#7c7ff7;--accent-bg:#eeeeff;
+  --green:#16a34a;--green-bg:#dcfce7;
+  --amber:#d97706;--amber-bg:#fef3c7;
+  --red:#dc2626;--red-bg:#fee2e2;
+  --r:12px;--rs:8px;
+}
+[data-theme=dark]{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2433;--card:#161b27;--border:#2a3044;
+  --text:#f0f2f8;--text2:#9097a8;--text3:#5a5f6e;
+  --accent:#7c7ff7;--accent2:#9a9dff;--accent-bg:#1e1f45;
+  --green:#4ade80;--green-bg:#052e16;--amber:#fbbf24;--amber-bg:#1c1300;
+  --red:#f87171;--red-bg:#2a0808;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+
+/* animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes countUp{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes barFill{from{width:0%}to{width:var(--target-width)}}
+
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px;width:360px;max-width:92vw;text-align:center;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+.login-logo{font-size:40px;margin-bottom:10px;animation:pulse 2s infinite}
+.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
+.err{background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:10px;font-size:12px;margin-bottom:12px;display:none;animation:slideDown .25s ease}
+
+#admin-app{display:none;min-height:100vh;flex-direction:column}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:54px;flex-shrink:0;animation:slideDown .3s ease}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{font-size:20px}
+.topbar-title{font-size:16px;font-weight:700;color:var(--text)}
+.topbar-title span{color:var(--accent)}
+.topbar-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 2s infinite}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.tabs{display:flex;gap:4px;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;overflow-x:auto}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--text3);border-bottom:2px solid transparent;cursor:pointer;transition:.2s;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:5px}
+.page-content{padding:24px 28px;flex:1;overflow-y:auto}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;animation:fadeIn .35s ease both;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:all .2s;animation:fadeIn .35s ease both;cursor:default}
+.stat:hover{border-color:var(--accent);transform:translateY(-2px)}
+.stat-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-value{font-size:28px;font-weight:700;color:var(--text);animation:countUp .5s ease}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+.btn{padding:7px 13px;border-radius:var(--rs);font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .18s;position:relative;overflow:hidden}
+.btn:hover{background:var(--bg3);transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-p:hover{background:var(--accent2);box-shadow:0 4px 12px rgba(91,94,244,.3)}
+.btn-g{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-g:hover{box-shadow:0 4px 12px rgba(22,163,74,.3)}
+.btn-r{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-r:hover{box-shadow:0 4px 12px rgba(220,38,38,.3)}
+.btn-a{background:var(--amber);color:#fff;border-color:var(--amber)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-full{width:100%;padding:11px;font-size:14px}
+
+.fr{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.fi,.fs,.ft{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);color:var(--text);font-size:13px;outline:none;transition:all .2s}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
+.ft{resize:vertical;min-height:70px}
+
+.bdg{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-accent{background:var(--accent-bg);color:var(--accent)}
+
+.user-row{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);margin-bottom:8px;flex-wrap:wrap;transition:all .2s;animation:fadeIn .3s ease both}
+.user-row:hover{border-color:var(--accent);transform:translateX(3px)}
+.user-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;transition:transform .2s}
+.user-av:hover{transform:scale(1.1) rotate(5deg)}
+.av-s{background:var(--accent)}.av-t{background:var(--amber)}.av-a{background:var(--red)}
+.user-info{flex:1;min-width:140px}
+.user-name{font-size:14px;font-weight:600;color:var(--text)}
+.user-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.user-stats{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+.user-stat{font-size:11px;color:var(--text2)}
+.user-stat b{color:var(--text);font-weight:600}
+.user-actions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+
+.log-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;animation:fadeIn .25s ease both;transition:.15s}
+.log-item:hover{background:var(--bg2);padding-left:6px;border-radius:var(--rs)}
+.log-item:last-child{border-bottom:none}
+.log-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.log-text{flex:1;font-size:12px;color:var(--text)}
+.log-time{font-size:10px;color:var(--text3);flex-shrink:0}
+
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center}
+.ov.open{display:flex;animation:fadeIn .2s ease}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;width:440px;max-width:92vw;max-height:90vh;overflow-y:auto;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text)}
+.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}
+
+#toast{position:fixed;bottom:22px;right:22px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 15px;font-size:13px;color:var(--text);max-width:280px;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.toast-item.good{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.toast-item.warn{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}
+.toast-item.bad{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+
+.online-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 1.5s infinite}
+
+.search-bar{padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);color:var(--text);font-size:13px;outline:none;width:100%;margin-bottom:14px;transition:all .2s}
+.search-bar:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:4px 11px;border:1px solid var(--border);border-radius:99px;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;background:var(--bg2);transition:all .18s}
+.chip:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.05)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.05)}
+
+.pbar-wrap{background:var(--bg3);border-radius:99px;height:6px;overflow:hidden;margin-top:5px}
+.pbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+
+/* leaderboard */
+.podium-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.podium-card{border-radius:14px;padding:20px;text-align:center;border:2px solid transparent;transition:transform .2s,box-shadow .2s;animation:fadeIn .4s ease both}
+.podium-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.podium-1{background:linear-gradient(135deg,#fef9c3,#fde68a);border-color:#f59e0b}
+.podium-2{background:linear-gradient(135deg,#f1f5f9,#e2e8f0);border-color:#94a3b8}
+.podium-3{background:linear-gradient(135deg,#fef3c7,#fcd9a0);border-color:#b45309}
+[data-theme=dark] .podium-1{background:linear-gradient(135deg,#2a2000,#3d2e00)}
+[data-theme=dark] .podium-2{background:linear-gradient(135deg,#1a1f2e,#252b3d)}
+[data-theme=dark] .podium-3{background:linear-gradient(135deg,#1c1300,#2d1f00)}
+.podium-medal{font-size:34px;margin-bottom:6px}
+.podium-av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin:0 auto 8px;transition:transform .2s}
+.podium-card:hover .podium-av{transform:scale(1.1) rotate(5deg)}
+.podium-name{font-size:14px;font-weight:700;color:#111;margin-bottom:2px}
+[data-theme=dark] .podium-name{color:#f0f2f8}
+.podium-pts{font-size:26px;font-weight:800}
+.podium-pts-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.podium-xp-bar{margin-top:8px;background:rgba(255,255,255,.5);border-radius:99px;height:5px;overflow:hidden}
+[data-theme=dark] .podium-xp-bar{background:rgba(255,255,255,.1)}
+.podium-xp-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.podium-lvl{font-size:10px;color:#666;margin-top:3px}
+[data-theme=dark] .podium-lvl{color:#9097a8}
+
+.lb-table{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.lb-head{display:grid;grid-template-columns:44px 1fr 90px 80px 70px;padding:8px 14px;background:var(--bg3);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.lb-row{display:grid;grid-template-columns:44px 1fr 90px 80px 70px;padding:11px 14px;align-items:center;border-top:1px solid var(--border);transition:all .15s;cursor:default;animation:fadeIn .3s ease both}
+.lb-row:nth-child(odd){background:var(--card)}
+.lb-row:nth-child(even){background:var(--bg2)}
+.lb-row:hover{background:var(--accent-bg);transform:translateX(4px)}
+.lb-rank{font-size:13px;font-weight:700}
+.lb-user{display:flex;align-items:center;gap:9px}
+.lb-av{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;transition:transform .2s}
+.lb-row:hover .lb-av{transform:scale(1.15) rotate(5deg)}
+.lb-uname{font-size:13px;font-weight:600;color:var(--text)}
+.lb-email{font-size:10px;color:var(--text3)}
+.lb-pts{font-size:14px;font-weight:700;color:var(--amber)}
+.lb-xp-wrap{width:100%}
+.lb-xp-val{font-size:12px;font-weight:500;color:var(--text)}
+.lb-xp-bar{height:4px;background:var(--bg3);border-radius:99px;margin-top:3px;overflow:hidden}
+.lb-xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.lb-lvl{font-size:13px;font-weight:600;color:var(--accent)}
+
+@media(max-width:700px){
+  .grid2,.grid4{grid-template-columns:1fr}
+  .page-content{padding:14px}
+  .topbar{padding:0 14px}
+  .lb-head,.lb-row{grid-template-columns:32px 1fr 70px}
+  .lb-head span:nth-child(n+4),.lb-row>div:nth-child(n+4){display:none}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<div id="toast"></div>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🛡️</div>
+    <div class="login-title">Rushith's Admin Panel</div>
+    <div class="login-sub">StudyHive — Admin Access Only 👑</div>
+    <div class="err" id="login-err"></div>
+    <div class="fr"><label class="fl">Password</label><input class="fi" type="password" id="admin-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
+    <button class="btn btn-p btn-full" onclick="adminLogin()">Sign In 🚀</button>
+  </div>
+</div>
+
+<div id="admin-app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">🐝</span>
+      <span class="topbar-title">Study<span>Hive</span> · Rushith's Panel 👑</span>
+      <span class="topbar-badge" id="pending-badge">0 pending</span>
+    </div>
+    <div class="topbar-right">
+      <span style="font-size:12px;color:var(--text3)"><span class="online-dot"></span><span id="online-count">0</span> online</span>
+      <button class="btn btn-sm" onclick="toggleTheme()">🌙</button>
+      <button class="btn btn-sm btn-r" onclick="adminLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview',this)">📊 Overview</button>
+    <button class="tab" onclick="switchTab('pending',this)">⏳ Pending <span class="tab-badge" id="tab-pending-badge">0</span></button>
+    <button class="tab" onclick="switchTab('users',this)">👥 Users</button>
+    <button class="tab" onclick="switchTab('chat',this)">💬 Broadcast</button>
+    <button class="tab" onclick="switchTab('rooms',this)">🚪 Rooms</button>
+    <button class="tab" onclick="switchTab('tests',this)">📝 Tests</button>
+  </div>
+
+  <div class="page-content">
+
+    <div id="tab-overview" class="tab-page">
+      <div class="grid4">
+        <div class="stat"><div class="stat-label">Total Users</div><div class="stat-value" id="st-total">0</div></div>
+        <div class="stat"><div class="stat-label">Pending</div><div class="stat-value" id="st-pending">0</div><div class="stat-sub">Awaiting approval</div></div>
+        <div class="stat"><div class="stat-label">Teachers</div><div class="stat-value" id="st-teachers">0</div></div>
+        <div class="stat"><div class="stat-label">Banned</div><div class="stat-value" id="st-banned">0</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-title">⏳ Pending Approvals</div><div id="ov-pending"></div></div>
+        <div class="card"><div class="card-title">📋 Activity Log</div><div id="activity-log"></div></div>
+      </div>
+      <div class="card"><div class="card-title">🏆 Leaderboard — Top Students</div><div id="leaderboard"></div></div>
+    </div>
+
+    <div id="tab-pending" class="tab-page" style="display:none">
+      <div class="card">
+        <div class="card-title">Pending Approvals <button class="btn btn-sm" onclick="loadData()">↻ Refresh</button></div>
+        <div id="pending-list"></div>
+      </div>
+    </div>
+
+    <div id="tab-users" class="tab-page" style="display:none">
+      <input class="search-bar" id="user-search" placeholder="🔍 Search by name or email..." oninput="filterUsers()"/>
+      <div class="chips" id="role-filter">
+        <div class="chip active" onclick="filterChip(this,'role-filter');filterUsers()">All</div>
+        <div class="chip" onclick="filterChip(this,'role-filter');filterUsers()">student</div>
+        <div class="chip" onclick="filterChip(this,'role-filter');filterUsers()">teacher</div>
+        <div class="chip" onclick="filterChip(this,'role-filter');filterUsers()">banned</div>
+      </div>
+      <div id="users-list"></div>
+    </div>
+
+    <div id="tab-chat" class="tab-page" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">📢 Broadcast to All Users</div>
+        <div class="fr"><textarea class="ft" id="broadcast-chat-msg" placeholder="Send an announcement to everyone..."></textarea></div>
+        <div style="display:flex;gap:8px">
+          <select class="fs" id="bc-type" style="width:auto;flex-shrink:0">
+            <option value="info">ℹ️ Info</option>
+            <option value="warn">⚠️ Warning</option>
+            <option value="good">✅ Good News</option>
+          </select>
+          <button class="btn btn-p" onclick="broadcastToAll()">Send to All 📢</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">💬 Message Specific User</div>
+        <div class="fr"><label class="fl">Select User</label><select class="fs" id="msg-target-user"></select></div>
+        <div class="fr"><label class="fl">Message</label><textarea class="ft" id="msg-specific-text" placeholder="Private message..."></textarea></div>
+        <button class="btn btn-p" onclick="sendSpecificMsg()">Send Message 💬</button>
+      </div>
+      <div class="card">
+        <div class="card-title">⭐ Give Points</div>
+        <div class="fr"><label class="fl">Select User</label><select class="fs" id="pts-target-user"></select></div>
+        <div class="fr"><label class="fl">Points</label><input class="fi" type="number" id="pts-give" value="20" min="1" max="1000"/></div>
+        <div class="fr"><label class="fl">Reason</label><input class="fi" id="pts-give-reason" placeholder="e.g. Best answer in debate"/></div>
+        <button class="btn btn-a" onclick="givePointsToUser()">⭐ Give Points</button>
+      </div>
+    </div>
+
+    <div id="tab-rooms" class="tab-page" style="display:none">
+      <div class="card">
+        <div class="card-title">Active Rooms <button class="btn btn-sm" onclick="loadData()">↻ Refresh</button></div>
+        <div id="rooms-list"></div>
+      </div>
+    </div>
+
+    <div id="tab-tests" class="tab-page" style="display:none">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">📝 Post a Test</div>
+        <div class="fr"><label class="fl">Test Title</label><input class="fi" id="at-title" placeholder="e.g. Newton's Laws Quiz"/></div>
+        <div class="fr"><label class="fl">Subject</label>
+          <select class="fs" id="at-subj">
+            <option>Physics</option><option>Chemistry</option><option>Biology</option>
+            <option>Maths 1</option><option>Maths 2</option><option>English</option>
+            <option>History</option><option>Computer Science</option><option>Economics</option><option>Geography</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fr"><label class="fl">XP Reward (max)</label><input class="fi" type="number" id="at-xp" value="30" min="5" max="100"/></div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Add up to 5 MCQ questions</div>
+        <div id="admin-q-builder"></div>
+        <button class="btn btn-sm" onclick="addAdminQ()" style="margin-bottom:14px">+ Add Question</button>
+        <br/>
+        <button class="btn btn-p" onclick="submitAdminTest()">Post Test 🎯</button>
+      </div>
+      <div class="card">
+        <div class="card-title">All Tests</div>
+        <div id="tests-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="ov" id="msg-modal">
+  <div class="modal">
+    <div class="modal-title" id="msg-modal-title">💬 Send Message</div>
+    <div class="fr"><label class="fl">Message</label><textarea class="ft" id="msg-modal-text" placeholder="Type your message..."></textarea></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('msg-modal')">Cancel</button><button class="btn btn-p" onclick="sendModalMsg()">Send</button></div>
+  </div>
+</div>
+
+<div class="ov" id="pts-modal">
+  <div class="modal">
+    <div class="modal-title" id="pts-modal-title">⭐ Give Points</div>
+    <div class="fr"><label class="fl">Points Amount</label><input class="fi" type="number" id="pts-modal-amt" value="10" min="1" max="500"/></div>
+    <div class="fr"><label class="fl">Reason</label><input class="fi" id="pts-modal-reason" placeholder="e.g. Excellent participation!"/></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('pts-modal')">Cancel</button><button class="btn btn-a" onclick="submitModalPoints()">Give Points ⭐</button></div>
+  </div>
+</div>
+
+<div class="ov" id="warn-modal">
+  <div class="modal">
+    <div class="modal-title" id="warn-modal-title">⚠️ Send Warning</div>
+    <div class="fr"><label class="fl">Warning Message</label><textarea class="ft" id="warn-modal-text" placeholder="e.g. Please keep discussion respectful..."></textarea></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('warn-modal')">Cancel</button><button class="btn btn-a" onclick="submitWarning()">Send Warning ⚠️</button></div>
+  </div>
+</div>
+
+<div class="ov" id="role-modal">
+  <div class="modal">
+    <div class="modal-title" id="role-modal-title">🔄 Change Role</div>
+    <div class="fr"><label class="fl">New Role</label>
+      <select class="fs" id="role-select">
+        <option value="student">🎒 Student</option>
+        <option value="teacher">🎓 Teacher</option>
+      </select>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal('role-modal')">Cancel</button><button class="btn btn-p" onclick="submitRoleChange()">Change Role</button></div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD="rushithisthegoat";
+let allUsers=[],allRooms=[],allTests=[],activityLog=[];
+let targetUid=null,dark=false,adminQs=[];
+
+function adminLogin(){
+  const pass=document.getElementById('admin-pass').value;
+  if(pass!==ADMIN_PASSWORD){const e=document.getElementById('login-err');e.textContent='Wrong password. Try again.';e.style.display='block';e.style.animation='slideDown .25s ease';return}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('admin-app').style.display='flex';
+  document.getElementById('admin-app').style.flexDirection='column';
+  toast('Welcome back, Rushith! 👑','good');
+  loadData();
+  setInterval(loadData,8000);
+}
+
+function adminLogout(){location.reload()}
+
+async function loadData(){
+  try{
+    const[ur,rr,tr]=await Promise.all([fetch('/api/users').then(r=>r.json()),fetch('/api/rooms').then(r=>r.json()),fetch('/api/tests').then(r=>r.json())]);
+    allUsers=ur;allRooms=rr;allTests=tr;
+    renderOverview();renderPending();renderUsers();renderRoomsAdmin();renderTests();populateUserDropdowns();
+  }catch(e){toast('Failed to load: '+e.message,'bad')}
+}
+
+function renderOverview(){
+  const total=allUsers.length;
+  const pending=allUsers.filter(u=>u.status==='pending').length;
+  const teachers=allUsers.filter(u=>u.role==='teacher').length;
+  const banned=allUsers.filter(u=>u.status==='banned').length;
+  document.getElementById('st-total').textContent=total;
+  document.getElementById('st-pending').textContent=pending;
+  document.getElementById('st-teachers').textContent=teachers;
+  document.getElementById('st-banned').textContent=banned;
+  document.getElementById('pending-badge').textContent=pending+' pending';
+  document.getElementById('tab-pending-badge').textContent=pending;
+  const pendingUsers=allUsers.filter(u=>u.status==='pending');
+  document.getElementById('ov-pending').innerHTML=pendingUsers.length
+    ?pendingUsers.map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);margin-bottom:7px;animation:fadeIn .3s ease;transition:.2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"><div class="user-av av-s">${u.name[0]}</div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email} · wants to be: ${u.role}</div></div><button class="btn btn-sm btn-g" onclick="approveUser('${u.uid}')">✔ Approve</button><button class="btn btn-sm btn-r" onclick="rejectUser('${u.uid}')">✕ Reject</button></div>`).join('')
+    :'<div style="color:var(--text3);font-size:13px;padding:10px 0">🎉 No pending approvals!</div>';
+  renderLeaderboard();
+  renderActivityLog();
+}
+
+function renderLeaderboard(){
+  const sorted=[...allUsers].filter(u=>u.role==='student'&&u.status==='approved').sort((a,b)=>(b.points||0)-(a.points||0)).slice(0,10);
+  const lb=document.getElementById('leaderboard');
+  if(!sorted.length){lb.innerHTML='<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">No students yet. 🎓</div>';return}
+  const medals=['🥇','🥈','🥉'];
+  const podiumColors=[{bg:'#f59e0b',pts:'#b45309',ptslbl:'#92400e'},{bg:'#94a3b8',pts:'#475569',ptslbl:'#64748b'},{bg:'#b45309',pts:'#92400e',ptslbl:'#a16207'}];
+  const podiumClass=['podium-1','podium-2','podium-3'];
+  const podiumHTML=sorted.slice(0,3).map((u,i)=>`
+    <div class="podium-card ${podiumClass[i]}" style="animation-delay:${i*.1}s">
+      <div class="podium-medal">${medals[i]}</div>
+      <div class="podium-av" style="background:${podiumColors[i].bg}">${u.name[0]}</div>
+      <div class="podium-name">${u.name}</div>
+      <div class="podium-pts" style="color:${podiumColors[i].pts}">${u.points||0}</div>
+      <div class="podium-pts-label" style="color:${podiumColors[i].ptslbl}">points</div>
+      <div class="podium-xp-bar"><div class="podium-xp-fill" style="width:${Math.min((u.xp||0)%100,100)}%;background:${podiumColors[i].bg}"></div></div>
+      <div class="podium-lvl">Level ${u.level||0} · ${u.xp||0} XP</div>
+    </div>`).join('');
+  const tableHTML=`
+    <div class="lb-table">
+      <div class="lb-head"><span>#</span><span>Student</span><span>Points</span><span>XP</span><span>Level</span></div>
+      ${sorted.map((u,i)=>`
+        <div class="lb-row" style="animation-delay:${i*.05}s">
+          <div class="lb-rank" style="color:${i===0?'#f59e0b':i===1?'#94a3b8':i===2?'#b45309':'var(--text3)'}">${i<3?medals[i]:'#'+(i+1)}</div>
+          <div class="lb-user"><div class="lb-av">${u.name[0]}</div><div><div class="lb-uname">${u.name}</div><div class="lb-email">${u.email}</div></div></div>
+          <div class="lb-pts">⭐ ${u.points||0}</div>
+          <div class="lb-xp-wrap"><div class="lb-xp-val">${u.xp||0} XP</div><div class="lb-xp-bar"><div class="lb-xp-fill" style="width:${Math.min((u.xp||0)%100,100)}%"></div></div></div>
+          <div class="lb-lvl">Lvl ${u.level||0}</div>
+        </div>`).join('')}
+    </div>`;
+  lb.innerHTML=`<div class="podium-grid">${podiumHTML}</div>${tableHTML}`;
+}
+
+function renderActivityLog(){
+  const log=document.getElementById('activity-log');
+  const entries=[...activityLog];
+  allUsers.filter(u=>u.status==='pending').forEach(u=>entries.push({icon:'⏳',text:`${u.name} registered as ${u.role}`,time:'Recent'}));
+  allUsers.filter(u=>u.status==='banned').forEach(u=>entries.push({icon:'🚫',text:`${u.name} is banned`,time:'—'}));
+  if(!entries.length)entries.push({icon:'✅',text:'All clear — no pending actions',time:'Now'});
+  log.innerHTML=entries.slice(0,10).map((e,i)=>`<div class="log-item" style="animation-delay:${i*.05}s"><span class="log-icon">${e.icon}</span><span class="log-text">${e.text}</span><span class="log-time">${e.time}</span></div>`).join('');
+}
+
+function renderPending(){
+  const pending=allUsers.filter(u=>u.status==='pending');
+  document.getElementById('pending-list').innerHTML=pending.length?pending.map(u=>fullUserRow(u)).join(''):'<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center">🎉 No pending requests!</div>';
+}
+
+function renderUsers(){
+  const search=document.getElementById('user-search')?.value.toLowerCase()||'';
+  const roleChip=document.querySelector('#role-filter .chip.active')?.textContent||'All';
+  let users=allUsers;
+  if(roleChip!=='All')users=users.filter(u=>roleChip==='banned'?u.status==='banned':u.role===roleChip);
+  if(search)users=users.filter(u=>u.name.toLowerCase().includes(search)||u.email.toLowerCase().includes(search));
+  document.getElementById('users-list').innerHTML=users.length?users.map(u=>fullUserRow(u)).join(''):'<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center">No users found.</div>';
+}
+
+function filterUsers(){renderUsers()}
+
+function fullUserRow(u){
+  const sb=u.status==='approved'?'b-green':u.status==='pending'?'b-amber':u.status==='banned'?'b-red':'b-accent';
+  const ac=u.role==='teacher'?'av-t':u.role==='admin'?'av-a':'av-s';
+  return `<div class="user-row">
+    <div class="user-av ${ac}">${u.name[0]}</div>
+    <div class="user-info">
+      <div class="user-name">${u.name} <span class="bdg ${sb}">${u.status}</span> <span class="bdg b-accent">${u.role}</span></div>
+      <div class="user-meta">${u.email} · Joined ${u.joined||'—'}</div>
+      <div class="user-stats">
+        <span class="user-stat">⭐ <b>${u.points||0}</b> pts</span>
+        <span class="user-stat">🎯 <b>${u.xp||0}</b> XP</span>
+        <span class="user-stat">🏆 Lvl <b>${u.level||0}</b></span>
+        <span class="user-stat">⚠️ <b>${u.warnings||0}</b> warns</span>
+      </div>
+      <div style="margin-top:5px;width:120px"><div class="pbar-wrap"><div class="pbar-fill" style="width:${Math.min((u.xp||0)%100,100)}%"></div></div></div>
+    </div>
+    <div class="user-actions">
+      ${u.status==='pending'?`<button class="btn btn-sm btn-g" onclick="approveUser('${u.uid}')">✔ Approve</button>`:``}
+      ${u.status==='pending'?`<button class="btn btn-sm btn-r" onclick="rejectUser('${u.uid}')">✕ Reject</button>`:``}
+      ${u.status==='approved'?`<button class="btn btn-sm btn-a" onclick="openPtsModal('${u.uid}','${u.name}')">⭐ Pts</button>`:``}
+      ${u.status==='approved'?`<button class="btn btn-sm" onclick="openWarnModal('${u.uid}','${u.name}')">⚠️ Warn</button>`:``}
+      ${u.status==='approved'?`<button class="btn btn-sm" onclick="openMsgModal('${u.uid}','${u.name}')">💬 Msg</button>`:``}
+      ${u.uid!=='admin'?`<button class="btn btn-sm btn-p" onclick="openRoleModal('${u.uid}','${u.name}','${u.role}')">🔄 Role</button>`:``}
+      ${u.status!=='banned'&&u.uid!=='admin'?`<button class="btn btn-sm btn-r" onclick="banUser('${u.uid}','${u.name}')">🚫 Ban</button>`:``}
+      ${u.status==='banned'?`<button class="btn btn-sm btn-g" onclick="unbanUser('${u.uid}')">↩ Unban</button>`:``}
+    </div>
+  </div>`;
+}
+
+function renderRoomsAdmin(){
+  const el=document.getElementById('rooms-list');
+  if(!allRooms.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center">No rooms yet.</div>';return}
+  el.innerHTML=allRooms.map(r=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);margin-bottom:8px;transition:all .2s;animation:fadeIn .3s ease" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:22px">📚</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${r.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${r.subject} · Host: ${r.host} · ${r.type||'text'} · ${r.created||'—'}</div>
+      </div>
+      <span class="bdg ${r.live?'b-red':'b-green'}">${r.live?'● LIVE':'● OPEN'}</span>
+    </div>`).join('');
+}
+
+function addAdminQ(){
+  if(adminQs.length>=5)return alert('Max 5 questions');
+  adminQs.push({text:'',options:['','','',''],correct:0});
+  const el=document.getElementById('admin-q-builder');
+  el.innerHTML=adminQs.map((q,qi)=>`
+    <div style="background:var(--bg2);border-radius:var(--rs);padding:11px;margin-bottom:9px;border:1px solid var(--border);animation:fadeIn .25s ease">
+      <div class="fr"><label class="fl">Question ${qi+1}</label><input class="fi" value="${q.text}" oninput="adminQs[${qi}].text=this.value" placeholder="Question text"/></div>
+      ${[0,1,2,3].map(oi=>`<div style="display:flex;gap:7px;align-items:center;margin-bottom:5px"><input type="radio" name="ac-${qi}" ${q.correct===oi?'checked':''} onchange="adminQs[${qi}].correct=${oi}"/><input class="fi" style="flex:1" value="${q.options[oi]}" oninput="adminQs[${qi}].options[${oi}]=this.value" placeholder="Option ${oi+1}"/></div>`).join('')}
+    </div>`).join('');
+}
+
+function renderTests(){
+  const el=document.getElementById('tests-list');
+  if(!allTests.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center">No tests yet. 📝</div>';return}
+  el.innerHTML=allTests.map(t=>`
+    <div style="padding:13px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg2);margin-bottom:9px;transition:.2s;animation:fadeIn .3s ease" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">${t.title}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.subject} · ${t.questions?.length||0}Q · ⭐${t.xpReward} XP · by ${t.author}</div>
+      <div style="font-size:11px;color:var(--green);margin-top:3px">✔ Completed by ${t.completedBy?.length||0} student(s)</div>
+    </div>`).join('');
+}
+
+async function submitAdminTest(){
+  const title=document.getElementById('at-title').value.trim();
+  if(!title)return alert('Enter test title');
+  if(!adminQs.length)return alert('Add at least one question');
+  await fetch('/api/tests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,subject:document.getElementById('at-subj').value,xpReward:document.getElementById('at-xp').value,author:'Rushith',authorId:'admin',questions:adminQs})});
+  toast('✅ Test posted!','good');
+  logActivity('📝','New test: '+title);
+  adminQs=[];document.getElementById('admin-q-builder').innerHTML='';document.getElementById('at-title').value='';
+  loadData();
+}
+
+async function broadcastToAll(){
+  const msg=document.getElementById('broadcast-chat-msg').value.trim();
+  if(!msg)return alert('Enter a message');
+  for(const u of allUsers.filter(u=>u.status==='approved')){
+    await fetch('/api/users/'+u.uid+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  }
+  toast('📢 Broadcast sent to all users!','good');
+  logActivity('📢','Broadcast: '+msg.substring(0,40));
+  document.getElementById('broadcast-chat-msg').value='';
+}
+
+async function sendSpecificMsg(){
+  const uid=document.getElementById('msg-target-user').value;
+  const msg=document.getElementById('msg-specific-text').value.trim();
+  if(!uid||!msg)return alert('Select a user and type a message');
+  await fetch('/api/users/'+uid+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  toast('💬 Message sent!','good');
+  document.getElementById('msg-specific-text').value='';
+}
+
+async function givePointsToUser(){
+  const uid=document.getElementById('pts-target-user').value;
+  const amt=document.getElementById('pts-give').value;
+  const reason=document.getElementById('pts-give-reason').value.trim()||'Rushith reward';
+  if(!uid)return alert('Select a user');
+  await fetch('/api/users/'+uid+'/points',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,reason})});
+  toast('⭐ '+amt+' points given!','good');
+  logActivity('⭐','Points: '+reason);
+  document.getElementById('pts-give-reason').value='';
+  loadData();
+}
+
+function populateUserDropdowns(){
+  const opts=allUsers.filter(u=>u.status==='approved'&&u.uid!=='admin').map(u=>`<option value="${u.uid}">${u.name} (${u.role})</option>`).join('');
+  document.getElementById('msg-target-user').innerHTML=opts||'<option>No users yet</option>';
+  document.getElementById('pts-target-user').innerHTML=opts||'<option>No users yet</option>';
+}
+
+async function approveUser(uid){await fetch('/api/users/'+uid+'/approve',{method:'POST'});toast('✔ Approved!','good');logActivity('✔','Approved: '+nameOf(uid));loadData()}
+async function rejectUser(uid){await fetch('/api/users/'+uid+'/reject',{method:'POST'});toast('Rejected','warn');logActivity('✕','Rejected: '+nameOf(uid));loadData()}
+async function banUser(uid,name){if(!confirm('Ban '+name+'?'))return;await fetch('/api/users/'+uid+'/ban',{method:'POST'});toast('🚫 Banned','bad');logActivity('🚫','Banned: '+name);loadData()}
+async function unbanUser(uid){await fetch('/api/users/'+uid+'/unban',{method:'POST'});toast('↩ Unbanned','good');logActivity('↩','Unbanned: '+nameOf(uid));loadData()}
+
+function openMsgModal(uid,name){targetUid=uid;document.getElementById('msg-modal-title').textContent='💬 Message '+name;openModal('msg-modal')}
+async function sendModalMsg(){
+  const msg=document.getElementById('msg-modal-text').value.trim();if(!msg)return;
+  await fetch('/api/users/'+targetUid+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  closeModal('msg-modal');document.getElementById('msg-modal-text').value='';
+  toast('💬 Sent to '+nameOf(targetUid),'good');logActivity('💬','Messaged: '+nameOf(targetUid));
+}
+
+function openPtsModal(uid,name){targetUid=uid;document.getElementById('pts-modal-title').textContent='⭐ Give Points to '+name;openModal('pts-modal')}
+async function submitModalPoints(){
+  const amt=document.getElementById('pts-modal-amt').value;
+  const reason=document.getElementById('pts-modal-reason').value.trim()||'Rushith reward';
+  await fetch('/api/users/'+targetUid+'/points',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,reason})});
+  closeModal('pts-modal');document.getElementById('pts-modal-reason').value='';
+  toast('⭐ '+amt+' pts → '+nameOf(targetUid),'good');logActivity('⭐','Points → '+nameOf(targetUid));loadData();
+}
+
+function openWarnModal(uid,name){targetUid=uid;document.getElementById('warn-modal-title').textContent='⚠️ Warn '+name;openModal('warn-modal')}
+async function submitWarning(){
+  const msg=document.getElementById('warn-modal-text').value.trim();if(!msg)return;
+  await fetch('/api/users/'+targetUid+'/warn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  closeModal('warn-modal');document.getElementById('warn-modal-text').value='';
+  toast('⚠️ Warning sent to '+nameOf(targetUid),'warn');logActivity('⚠️','Warned: '+nameOf(targetUid));loadData();
+}
+
+function openRoleModal(uid,name,currentRole){
+  targetUid=uid;
+  document.getElementById('role-modal-title').textContent='🔄 Change Role: '+name;
+  document.getElementById('role-select').value=currentRole;
+  openModal('role-modal');
+}
+async function submitRoleChange(){
+  const role=document.getElementById('role-select').value;
+  await fetch('/api/users/'+targetUid+'/setrole',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role})});
+  closeModal('role-modal');
+  toast('🔄 '+nameOf(targetUid)+' is now a '+role,'good');
+  logActivity('🔄','Role changed: '+nameOf(targetUid)+' → '+role);
+  loadData();
+}
+
+function nameOf(uid){return allUsers.find(u=>u.uid===uid)?.name||uid}
+
+function logActivity(icon,text){
+  activityLog.unshift({icon,text,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  if(activityLog.length>20)activityLog.pop();
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab-page').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).style.display='block';
+  el.classList.add('active');
+}
+
+function filterChip(el,groupId){
+  document.querySelectorAll('#'+groupId+' .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+function toggleTheme(){
+  dark=!dark;
+  document.body.setAttribute('data-theme',dark?'dark':'light');
+  toast(dark?'Dark mode 🌙':'Light mode ☀️');
+}
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  const d=document.createElement('div');
+  d.className='toast-item'+(type?' '+type:'');
+  d.textContent=msg;
+  t.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transform='translateY(8px)';d.style.transition='.25s';setTimeout(()=>d.remove(),250)},4000);
+}
+</script>
+</body>
+</html>
